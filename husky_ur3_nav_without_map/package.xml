@@ -1,36 +1,48 @@
 <?xml version="1.0"?>
-<package format="2">
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>husky_ur3_nav_without_map</name>
-  <version>0.1.0</version>
-  <description>The husky_ur3_nav_without_map package</description>
-
+  <version>2.0.0</version>
+  <description>ROS2 Humble Navigation without map package for Husky UR3 robot using Nav2 and SLAM</description>
 
   <maintainer email="qualiashell@naver.com">TaeHyeon Kim</maintainer>
+  <license>BSD</license>
 
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <license>TODO</license>
+  <depend>rclcpp</depend>
+  <depend>rclpy</depend>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>amcl</build_depend>
-  <build_depend>gmapping</build_depend>
-  <build_depend>map_server</build_depend>
-  <build_depend>move_base</build_depend>
-  <build_depend>rospy</build_depend>
-  <build_export_depend>amcl</build_export_depend>
-  <build_export_depend>gmapping</build_export_depend>
-  <build_export_depend>map_server</build_export_depend>
-  <build_export_depend>move_base</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <exec_depend>amcl</exec_depend>
-  <exec_depend>gmapping</exec_depend>
-  <exec_depend>map_server</exec_depend>
-  <exec_depend>move_base</exec_depend>
-  <exec_depend>rospy</exec_depend>
+  <!-- Nav2 Stack -->
+  <exec_depend>navigation2</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>nav2_bt_navigator</exec_depend>
+  <exec_depend>nav2_controller</exec_depend>
+  <exec_depend>nav2_planner</exec_depend>
+  <exec_depend>nav2_behaviors</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
+  <exec_depend>nav2_costmap_2d</exec_depend>
 
+  <!-- SLAM (replaces gmapping) -->
+  <exec_depend>slam_toolbox</exec_depend>
 
-  <!-- The export tag contains other, unspecified, tags -->
+  <!-- TF -->
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+
+  <!-- Messages -->
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+
+  <!-- Launch -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
   <export>
-    <!-- Other tools can request additional information be placed here -->
-
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

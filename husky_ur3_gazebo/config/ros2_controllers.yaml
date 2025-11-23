@@ -1,0 +1,127 @@
+# ROS2 Humble ros2_control configuration for Husky UR3 with Gripper
+
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    # Controllers for Husky base (diff drive)
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+    # Joint state broadcaster
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    # UR3 arm controller
+    ur3_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    # Gripper controller
+    gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+
+# Diff drive controller for Husky base
+diff_drive_controller:
+  ros__parameters:
+    left_wheel_names: ["front_left_wheel", "rear_left_wheel"]
+    right_wheel_names: ["front_right_wheel", "rear_right_wheel"]
+
+    wheel_separation: 0.5708
+    wheel_radius: 0.1651
+
+    wheel_separation_multiplier: 1.0
+    left_wheel_radius_multiplier: 1.0
+    right_wheel_radius_multiplier: 1.0
+
+    publish_rate: 50.0
+    odom_frame_id: odom
+    base_frame_id: base_link
+    pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+    twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+
+    open_loop: false
+    enable_odom_tf: true
+
+    cmd_vel_timeout: 0.5
+    publish_limited_velocity: true
+    velocity_rolling_window_size: 10
+
+    # Velocity and acceleration limits
+    linear.x.has_velocity_limits: true
+    linear.x.has_acceleration_limits: true
+    linear.x.has_jerk_limits: false
+    linear.x.max_velocity: 1.0
+    linear.x.min_velocity: -1.0
+    linear.x.max_acceleration: 1.0
+    linear.x.min_acceleration: -1.0
+
+    angular.z.has_velocity_limits: true
+    angular.z.has_acceleration_limits: true
+    angular.z.has_jerk_limits: false
+    angular.z.max_velocity: 1.0
+    angular.z.min_velocity: -1.0
+    angular.z.max_acceleration: 1.0
+    angular.z.min_acceleration: -1.0
+
+
+# Joint state broadcaster
+joint_state_broadcaster:
+  ros__parameters:
+    publish_rate: 50.0
+
+
+# UR3 arm joint trajectory controller
+ur3_arm_controller:
+  ros__parameters:
+    joints:
+      - shoulder_pan_joint
+      - shoulder_lift_joint
+      - elbow_joint
+      - wrist_1_joint
+      - wrist_2_joint
+      - wrist_3_joint
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity
+
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+
+    allow_partial_joints_goal: false
+    open_loop_control: false
+
+    constraints:
+      stopped_velocity_tolerance: 0.01
+      goal_time: 0.0
+
+
+# Gripper joint trajectory controller
+gripper_controller:
+  ros__parameters:
+    joints:
+      - rh_p12_rn
+      - rh_r2
+      - rh_l1
+      - rh_l2
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity
+
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+
+    allow_partial_joints_goal: true
+    open_loop_control: false
+
+    constraints:
+      stopped_velocity_tolerance: 0.01
+      goal_time: 0.0

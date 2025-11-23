@@ -14,51 +14,62 @@
 * limitations under the License.
 *******************************************************************************/
 
-#include <ros/ros.h>
-#include <std_msgs/Float64.h>
+// ROS2 Humble Migration
 
-ros::Publisher g_rh_r2_joint_pub;
-ros::Publisher g_rh_l1_joint_pub;
-ros::Publisher g_rh_l2_joint_pub;
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float64.hpp>
+#include <memory>
 
-
-void rhJointCallback(const std_msgs::Float64::ConstPtr& msg)
+class GazeboGripperPublisher : public rclcpp::Node
 {
-  std_msgs::Float64 grip_joint_msg, grip_joint_msg_2;
+public:
+  GazeboGripperPublisher()
+  : Node("gazebo_gripper_publisher")
+  {
+    // Create publishers
+    rh_r2_joint_pub_ = this->create_publisher<std_msgs::msg::Float64>(
+      "/rh_r2_position/command", 10);
+    rh_l1_joint_pub_ = this->create_publisher<std_msgs::msg::Float64>(
+      "/rh_l1_position/command", 10);
+    rh_l2_joint_pub_ = this->create_publisher<std_msgs::msg::Float64>(
+      "/rh_l2_position/command", 10);
 
-  grip_joint_msg.data = msg->data;
-  if (grip_joint_msg.data > 1.05)
-    grip_joint_msg.data = 1.05;
-  grip_joint_msg_2.data = msg->data * (1.0 / 1.1);
+    // Create subscriber
+    rh_joint_sub_ = this->create_subscription<std_msgs::msg::Float64>(
+      "/rh_p12_rn_position/command", 10,
+      std::bind(&GazeboGripperPublisher::rh_joint_callback, this, std::placeholders::_1));
 
-  g_rh_r2_joint_pub.publish(grip_joint_msg_2);
-  g_rh_l1_joint_pub.publish(grip_joint_msg);
-  g_rh_l2_joint_pub.publish(grip_joint_msg_2);
-}
+    RCLCPP_INFO(this->get_logger(), "Gazebo Gripper Publisher node started");
+  }
 
+private:
+  void rh_joint_callback(const std_msgs::msg::Float64::SharedPtr msg)
+  {
+    auto grip_joint_msg = std_msgs::msg::Float64();
+    auto grip_joint_msg_2 = std_msgs::msg::Float64();
+
+    grip_joint_msg.data = msg->data;
+    if (grip_joint_msg.data > 1.05) {
+      grip_joint_msg.data = 1.05;
+    }
+    grip_joint_msg_2.data = msg->data * (1.0 / 1.1);
+
+    rh_r2_joint_pub_->publish(grip_joint_msg_2);
+    rh_l1_joint_pub_->publish(grip_joint_msg);
+    rh_l2_joint_pub_->publish(grip_joint_msg_2);
+  }
+
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr rh_r2_joint_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr rh_l1_joint_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr rh_l2_joint_pub_;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr rh_joint_sub_;
+};
 
 int main(int argc, char **argv)
 {
-
-  ros::init(argc, argv, "gazebo_gripper_publisher");
-  ros::NodeHandle nh("~");
-
-  // 210927 YSW: Removed gripper namespace
-  /*
-  g_rh_r2_joint_pub = nh.advertise<std_msgs::Float64>("/rh_p12_rn/rh_r2_position/command", 0);
-  g_rh_l1_joint_pub = nh.advertise<std_msgs::Float64>("/rh_p12_rn/rh_l1_position/command", 0);
-  g_rh_l2_joint_pub = nh.advertise<std_msgs::Float64>("/rh_p12_rn/rh_l2_position/command", 0);
-
-  
-  */
-
-  g_rh_r2_joint_pub = nh.advertise<std_msgs::Float64>("/rh_r2_position/command", 0);
-  g_rh_l1_joint_pub = nh.advertise<std_msgs::Float64>("/rh_l1_position/command", 0);
-  g_rh_l2_joint_pub = nh.advertise<std_msgs::Float64>("/rh_l2_position/command", 0);
-
-  ros::Subscriber rh_joint_sub = nh.subscribe("/rh_p12_rn_position/command", 5, rhJointCallback);
-
-  ros::spin();
-
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<GazeboGripperPublisher>();
+  rclcpp::spin(node);
+  rclcpp::shutdown();
   return 0;
 }

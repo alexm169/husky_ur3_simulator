@@ -1,27 +1,43 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(husky_ur3_gazebo)
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  roslaunch
-)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-catkin_package(
-  CATKIN_DEPENDS roscpp std_msgs
-)
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-)
+# Find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 
-# 노드 추가 - 210927 YSW
+# Build the gripper publisher node
 add_executable(gazebo_rh_pub src/gazebo_rh_pub.cpp)
-add_dependencies(gazebo_rh_pub ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(gazebo_rh_pub ${catkin_LIBRARIES})
-
-install(TARGETS gazebo_rh_pub
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ament_target_dependencies(gazebo_rh_pub
+  rclcpp
+  std_msgs
 )
 
+# Install targets
+install(TARGETS
+  gazebo_rh_pub
+  DESTINATION lib/${PROJECT_NAME}
+)
 
-install(DIRECTORY launch controller DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+# Install directories
+install(DIRECTORY
+  launch
+  config
+  urdf
+  meshes
+  worlds
+  DESTINATION share/${PROJECT_NAME}
+)
+
+# Install Python scripts
+install(PROGRAMS
+  src/husky_ur3_control_joint.py
+  src/ur3_control_joint.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+ament_package()
