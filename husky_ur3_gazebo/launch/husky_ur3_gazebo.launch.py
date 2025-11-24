@@ -4,13 +4,14 @@ ROS2 Humble Launch file for Husky UR3 Gazebo simulation
 """
 
 import os
+import subprocess
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction, RegisterEventHandler
+from launch.event_handlers import OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, Command, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
@@ -23,7 +24,7 @@ def generate_launch_description():
     world = LaunchConfiguration('world')
     x_pose = LaunchConfiguration('x_pose', default='0.0')
     y_pose = LaunchConfiguration('y_pose', default='0.0')
-    z_pose = LaunchConfiguration('z_pose', default='0.0')
+    z_pose = LaunchConfiguration('z_pose', default='0.1')
 
     # Declare launch arguments
     declare_use_sim_time = DeclareLaunchArgument(
@@ -52,17 +53,20 @@ def generate_launch_description():
 
     declare_z_pose = DeclareLaunchArgument(
         'z_pose',
-        default_value='0.0',
+        default_value='0.1',
         description='Initial z position of the robot'
     )
 
     # Path to URDF file
     urdf_file = os.path.join(pkg_husky_ur3_gazebo, 'urdf', 'husky_ur3_gripper.urdf.xacro')
 
-    # Robot description
-    robot_description = Command([
-        'xacro ', urdf_file
-    ])
+    # Process xacro using subprocess (avoids stderr warning issues)
+    xacro_result = subprocess.run(
+        ['xacro', urdf_file],
+        capture_output=True,
+        text=True
+    )
+    robot_description = xacro_result.stdout
 
     # Robot State Publisher
     robot_state_publisher = Node(
@@ -76,15 +80,7 @@ def generate_launch_description():
         }]
     )
 
-    # Joint State Publisher
-    joint_state_publisher = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        name='joint_state_publisher',
-        parameters=[{'use_sim_time': use_sim_time}]
-    )
-
-    # Gazebo server
+    # Gazebo server with world file
     gazebo_server = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
@@ -99,7 +95,7 @@ def generate_launch_description():
         )
     )
 
-    # Spawn robot in Gazebo
+    # Spawn robot in Gazebo - with delay to ensure Gazebo is ready
     spawn_robot = Node(
         package='gazebo_ros',
         executable='spawn_entity.py',
@@ -109,20 +105,19 @@ def generate_launch_description():
             '-topic', 'robot_description',
             '-x', x_pose,
             '-y', y_pose,
-            '-z', z_pose
+            '-z', z_pose,
+            '-timeout', '120'
         ],
         output='screen'
     )
 
-    # Controller manager spawner for diff_drive_controller
-    diff_drive_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['diff_drive_controller', '--controller-manager', '/controller_manager'],
-        output='screen'
+    # Delay spawn to ensure Gazebo is ready
+    delayed_spawn = TimerAction(
+        period=5.0,
+        actions=[spawn_robot]
     )
 
-    # Controller manager spawner for joint_state_broadcaster
+    # Controller spawners - delayed to ensure robot is spawned
     joint_state_broadcaster_spawner = Node(
         package='controller_manager',
         executable='spawner',
@@ -130,7 +125,13 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Controller manager spawner for UR3 arm controller
+    diff_drive_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['diff_drive_controller', '--controller-manager', '/controller_manager'],
+        output='screen'
+    )
+
     ur3_arm_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
@@ -138,12 +139,22 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Controller manager spawner for gripper controller
     gripper_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
         arguments=['gripper_controller', '--controller-manager', '/controller_manager'],
         output='screen'
+    )
+
+    # Delay controllers to ensure robot is spawned and controller manager is ready
+    delayed_controllers = TimerAction(
+        period=10.0,
+        actions=[
+            joint_state_broadcaster_spawner,
+            diff_drive_spawner,
+            ur3_arm_controller_spawner,
+            gripper_controller_spawner
+        ]
     )
 
     return LaunchDescription([
@@ -152,12 +163,9 @@ def generate_launch_description():
         declare_x_pose,
         declare_y_pose,
         declare_z_pose,
+        robot_state_publisher,
         gazebo_server,
         gazebo_client,
-        robot_state_publisher,
-        spawn_robot,
-        joint_state_broadcaster_spawner,
-        diff_drive_spawner,
-        ur3_arm_controller_spawner,
-        gripper_controller_spawner,
+        delayed_spawn,
+        delayed_controllers,
     ])

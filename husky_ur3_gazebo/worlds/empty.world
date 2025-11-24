@@ -1,13 +1,28 @@
 <?xml version="1.0" ?>
-<sdf version="1.5">
+<sdf version="1.6">
   <world name="default">
+    <!-- Physics settings -->
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
     <!-- A global light source -->
     <include>
       <uri>model://sun</uri>
     </include>
+
     <!-- A ground plane -->
     <include>
       <uri>model://ground_plane</uri>
     </include>
+
+    <!-- ROS2 Gazebo Factory Plugin - Required for spawn_entity service -->
+    <plugin name="gazebo_ros_factory" filename="libgazebo_ros_factory.so"/>
+
+    <!-- ROS2 Gazebo State Plugin - Provides /gazebo/get_entity_state etc -->
+    <plugin name="gazebo_ros_state" filename="libgazebo_ros_state.so"/>
+
   </world>
 </sdf>

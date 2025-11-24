@@ -37,6 +37,8 @@ install(DIRECTORY
 install(PROGRAMS
   src/husky_ur3_control_joint.py
   src/ur3_control_joint.py
+  scripts/gripper_control.py
+  scripts/arm_control.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
