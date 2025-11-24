@@ -7,7 +7,7 @@ import os
 import subprocess
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction, RegisterEventHandler, SetEnvironmentVariable
 from launch.event_handlers import OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -18,6 +18,17 @@ def generate_launch_description():
     # Get package directories
     pkg_husky_ur3_gazebo = get_package_share_directory('husky_ur3_gazebo')
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
+
+    # Set GAZEBO_MODEL_PATH to find meshes
+    gazebo_model_path = os.environ.get('GAZEBO_MODEL_PATH', '')
+    # Add the package share directory so Gazebo can resolve package:// URIs
+    new_model_path = os.path.dirname(pkg_husky_ur3_gazebo) + ':' + gazebo_model_path
+    os.environ['GAZEBO_MODEL_PATH'] = new_model_path
+
+    # Also set GAZEBO_RESOURCE_PATH for mesh files
+    gazebo_resource_path = os.environ.get('GAZEBO_RESOURCE_PATH', '')
+    new_resource_path = pkg_husky_ur3_gazebo + ':' + gazebo_resource_path
+    os.environ['GAZEBO_RESOURCE_PATH'] = new_resource_path
 
     # Launch configuration variables
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
